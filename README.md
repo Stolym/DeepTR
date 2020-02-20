@@ -22,8 +22,14 @@ Ouput
   - Actions Patern
   
   Installation: 
+  
     put script -> C:\Games\Toribash-5.43\data\script
+    
   Load:
+  
     Load in game go to utils script
+    
   Target:
+  
     If you want change target so what your AI must to do, you can change reward function -> actual is stay stand.
+    

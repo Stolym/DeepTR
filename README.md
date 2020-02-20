@@ -6,6 +6,7 @@ This project contain script LUA with him you can train whatever model as you wan
 Its basic Reinforcement without deep-learning...
 
 Actions & EnvExploration [ AutoExplore with epsilon ]
+
 Memory [ State, Reward, Done, Info ]
 
  -> Input

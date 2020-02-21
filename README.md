@@ -33,3 +33,5 @@ Ouput
   
     If you want change target so what your AI must to do, you can change reward function -> actual is stay stand.
     
+Video Reward is go up !
+ https://www.youtube.com/watch?v=jNx5fuNVwOs&t=6s

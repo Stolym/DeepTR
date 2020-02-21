@@ -13,9 +13,9 @@ function Brain:create(balance)
     brain._ereward=0
     brain._preward=0
     brain._done=0
-    brain.epsilon=0.07
-    brain.gamma=0.8
-    brain.alpha=0.1
+    brain.epsilon=1
+    brain.gamma=0.85
+    brain.alpha=0.05
     return brain
 end
 
@@ -221,7 +221,7 @@ function Brain:choose_epsilon_action(state)
         self._saction = self:random_action()
         besp = true
     else
-        self._saction = argmax(self.q_table[sindex])
+        self._saction = argmax(self.q_table[sindex]) + 1
     end
     if table.getn(self.actions) <= self._saction and besp == false then
         self._saction = self:random_action()
@@ -243,16 +243,16 @@ local logic = {}
 local tick = os.clock()
 local _state = {}
 local epoch = 0
-local _timer = 1
+local _timer = 0.9
 
 local function frame()
     local x = os.clock()
 
     if engine == true and train == false then
+        train = true
+        tick = x
         logic:choose_epsilon_action(_state)
         run_frames(30)
-        tick = x
-        train = true
     elseif x - tick > _timer and engine == true and train == true then
         _next_state, reward, done, info = logic:render()
         local _sindex = logic:index_state(_state)
@@ -279,8 +279,9 @@ local function launch()
     _state = logic:get_state()
     engine = true
     epoch = epoch + 1
+    tick = os.clock()
     logic:update_reward()
-    --logic.epsilon = logic.epsilon * 0.88
+    logic.epsilon = logic.epsilon * 0.99
     if epoch == 2000 then _timer = 2 end
     if epoch == 10000 then _timer = 4 end
 end

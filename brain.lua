@@ -1,6 +1,14 @@
 
 Brain={}
 Brain.__index=Brain
+local engine = false
+local train = false
+local logic = {}
+local tick = os.clock()
+local _state = {}
+local epoch = 0
+local _timer = 0.8
+
 
 function Brain:create(balance)
     local brain={}             -- our new object
@@ -13,9 +21,9 @@ function Brain:create(balance)
     brain._ereward=0
     brain._preward=0
     brain._done=0
-    brain.epsilon=1
-    brain.gamma=0.85
-    brain.alpha=0.05
+    brain.epsilon=0.1
+    brain.gamma=0.80
+    brain.alpha=0.1
     return brain
 end
 
@@ -158,6 +166,7 @@ function Brain:render()
     local nstate = self:get_state()
     self:update_reward()
     self:update_q_table(self:index_state(nstate))
+    self:update_q_table(self:index_state(_state))
     return nstate, reward, self:done(), self:info()
 end
 
@@ -187,28 +196,30 @@ function Brain:update_q_table(sindex)
     if self.q_table[sindex] == nil then
         local nq_table = {}
         for i = 0, table.getn(self.actions) do
-            table.insert(nq_table, 0)
+            table.insert(nq_table, 1)
         end
         self.q_table[sindex] = nq_table
     end
     if table.getn(self.q_table[sindex]) ~= table.getn(self.actions) then
         for i = table.getn(self.q_table[sindex]), table.getn(self.actions) do
-            table.insert(self.q_table[sindex], 0)
+            table.insert(self.q_table[sindex], 1)
         end
     end
 end
 
 local function argmax(_table)
     local value=_table[1]
-    local vindex=0
+    local vindex=1
+    --local ret = ""
 
     for k, v in pairs(_table) do
+        --ret = ret .. " " .. v
         if v > value then
             vindex = k
             value = v
         end
     end
-    echo(ret)
+    --echo(ret)
     return vindex
 end
 
@@ -221,7 +232,7 @@ function Brain:choose_epsilon_action(state)
         self._saction = self:random_action()
         besp = true
     else
-        self._saction = argmax(self.q_table[sindex]) + 1
+        self._saction = argmax(self.q_table[sindex])
     end
     if table.getn(self.actions) <= self._saction and besp == false then
         self._saction = self:random_action()
@@ -236,14 +247,6 @@ end
 function Brain:info()
     return (0.0)
 end
-
-local engine = false
-local train = false
-local logic = {}
-local tick = os.clock()
-local _state = {}
-local epoch = 0
-local _timer = 0.9
 
 local function frame()
     local x = os.clock()
@@ -261,9 +264,11 @@ local function frame()
         old_value = logic.q_table[_sindex][logic._saction]
         next_max = math.max(unpack(logic.q_table[_nsindex]))
         new_value = (1 - logic.alpha) * old_value + logic.alpha * (reward + logic.gamma * next_max)
+        --echo("After Action State ".._sindex.." Next State ".._nsindex.." Action ".. logic._saction .. " "..new_value)
         logic.q_table[_sindex][logic._saction] = new_value
         _state = _next_state
         train = false
+        --echo("")
     end
 end
 
@@ -278,12 +283,15 @@ end
 local function launch()
     _state = logic:get_state()
     engine = true
+    train = false
     epoch = epoch + 1
-    tick = os.clock()
+    if table.getn(logic.actions) < 1 then
+        for i = 0, 99 do
+            logic:random_action()
+        end
+    end
     logic:update_reward()
-    logic.epsilon = logic.epsilon * 0.99
-    if epoch == 2000 then _timer = 2 end
-    if epoch == 10000 then _timer = 4 end
+    --logic.epsilon = logic.epsilon * 0.99
 end
 
 local function _end()

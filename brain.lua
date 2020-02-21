@@ -11,23 +11,24 @@ function Brain:create(balance)
     brain._lreward=0
     brain._saction=0
     brain._ereward=0
+    brain._preward=0
     brain._done=0
-    brain.epsilon=1
-    brain.gamma=0.55
-    brain.alpha=0.2
+    brain.epsilon=0.07
+    brain.gamma=0.8
+    brain.alpha=0.1
     return brain
 end
 
 function Brain:_action(index)
     for k, v in pairs(self.actions[index]) do
         set_joint_state(0, k, v)
-        set_joint_state(1, k, v)
+        --set_joint_state(1, k, v)
     end
 end
 
 function Brain:add_state(state)
     if self:index_state(state) ~= 0 then 
-        return 0
+        return self:index_state(state)
     end
     table.insert(self.memory, state)
     return 1
@@ -154,9 +155,10 @@ end
 
 function Brain:render()
     local reward = self:reward()
+    local nstate = self:get_state()
     self:update_reward()
-    self:update_q_table(self:get_state())
-    return self:get_state(), reward, self:done(), self:info()
+    self:update_q_table(self:index_state(nstate))
+    return nstate, reward, self:done(), self:info()
 end
 
 function Brain:state()
@@ -164,28 +166,24 @@ function Brain:state()
 end
 
 function Brain:update_reward()
+    local binfo=get_body_info(0, 0)
     local pinfo=get_player_info(0)
     local einfo=get_player_info(1)
     self._lreward = pinfo["score"]
     self._ereward = einfo["score"]
+    self._preward = binfo.pos.z
 end
 
 function Brain:reward()
-    local binfo = get_body_info (0, 0)
+    local binfo=get_body_info(0, 0)
     local pinfo=get_player_info(0)
     local einfo=get_player_info(1)
     local reward=(pinfo["score"] - self._lreward) - (einfo["score"] - self._ereward)
-    if binfo.pos.z > 1 then
-        if  binfo.pos.z - 1 > 1.5 then reward = reward + 1 else reward = reward + binfo.pos.z - 1.5 end
-    else
-        reward = reward - (1 - binfo.pos.z)
-    end
+    reward = binfo.pos.z - self._preward
     return reward
 end
 
-function Brain:update_q_table(state)
-    local sindex = self:index_state(state)
-
+function Brain:update_q_table(sindex)
     if self.q_table[sindex] == nil then
         local nq_table = {}
         for i = 0, table.getn(self.actions) do
@@ -218,8 +216,8 @@ function Brain:choose_epsilon_action(state)
     local sindex = self:index_state(state)
     local besp = false
 
-    self:update_q_table(state)
-    if math.random(0, 10000) / 10000 < self.epsilon then
+    self:update_q_table(sindex)
+    if math.random(0, 1000) / 1000 < self.epsilon then
         self._saction = self:random_action()
         besp = true
     else
@@ -255,10 +253,7 @@ local function frame()
         run_frames(30)
         tick = x
         train = true
-    end
-
-    if x - tick > _timer and engine == true and train == true then
-        tick = x
+    elseif x - tick > _timer and engine == true and train == true then
         _next_state, reward, done, info = logic:render()
         local _sindex = logic:index_state(_state)
         local _nsindex = logic:index_state(_next_state)
@@ -281,12 +276,11 @@ local function maintext()
 end
 
 local function launch()
-    logic._lreward = 0
-    logic._ereward = 0
     _state = logic:get_state()
     engine = true
     epoch = epoch + 1
-    logic.epsilon = logic.epsilon * 0.88
+    logic:update_reward()
+    --logic.epsilon = logic.epsilon * 0.88
     if epoch == 2000 then _timer = 2 end
     if epoch == 10000 then _timer = 4 end
 end
